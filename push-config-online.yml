@@ -1,0 +1,49 @@
+---
+# -------------------------------------------------------------------
+# STEP 1 — Detect online hosts
+# -------------------------------------------------------------------
+- name: Detect reachable network devices
+  hosts: routers
+  gather_facts: false
+
+  tasks:
+    - name: Ping device
+      ansible.builtin.ping:
+      register: ping_result
+      ignore_errors: true
+
+    - name: Add reachable hosts to group
+      ansible.builtin.add_host:
+        name: "{{ inventory_hostname }}"
+        groups: reachable_hosts
+      when: ping_result is succeeded
+
+# -------------------------------------------------------------------
+# STEP 2 — Push config to first reachable host
+# Choose reachable_hosts[0] or random
+# -------------------------------------------------------------------
+- name: Push config to selected reachable device
+  hosts: "{{ groups['reachable_hosts'] | first }}"
+  gather_facts: false
+
+  tasks:
+    - name: Show selected live device
+      debug:
+        msg: "Selected online device: {{ inventory_hostname }} (IP: {{ ansible_host }})"
+
+    # ---------------------------------------------------------------
+    # Render configuration template for this device
+    # ---------------------------------------------------------------
+    - name: Render generic config using host variables
+      ansible.builtin.template:
+        src: templates/base-config.j2
+        dest: "rendered/{{ inventory_hostname }}.cfg"
+      delegate_to: localhost
+
+    # ---------------------------------------------------------------
+    # Push rendered config to the online device
+    # ---------------------------------------------------------------
+    - name: Push configuration to device
+      ansible.netcommon.cli_config:
+        src: "rendered/{{ inventory_hostname }}.cfg"
+        save_when: modified
