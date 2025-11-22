@@ -30,7 +30,15 @@
     - name: Show selected live device
       debug:
         msg: "Selected online device: {{ inventory_hostname }} (IP: {{ ansible_host }})"
-
+    # ---------------------------------------------------------------
+    # Ensure rendered directory exists (Semaphore-safe fix)
+    # ---------------------------------------------------------------
+    - name: Ensure rendered directory exists
+      ansible.builtin.file:
+        path: rendered
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
     # ---------------------------------------------------------------
     # Render configuration template for this device
     # ---------------------------------------------------------------
