@@ -5,11 +5,6 @@
   gather_facts: yes
 
   tasks:
-    - name: Backup existing netplan config directory
-      ansible.builtin.command: >
-        cp -r /etc/netplan /etc/netplan.backup-{{ ansible_date_time.iso8601 }}
-      args:
-        warn: false
 
     - name: Push new netplan config
       ansible.builtin.template:
