@@ -1,57 +1,27 @@
----
-# -------------------------------------------------------------------
-# STEP 1 — Detect online hosts
-# -------------------------------------------------------------------
-- name: Detect reachable network devices
-  hosts: routers
-  gather_facts: false
+name: Push netplan configuration to Ubuntu server
+  hosts: all
+  become: yes
+  gather_facts: yes
 
   tasks:
-    - name: Ping device
-      ansible.builtin.ping:
-      register: ping_result
-      ignore_errors: true
+    - name: Backup existing netplan config directory
+      ansible.builtin.command: >
+        cp -r /etc/netplan /etc/netplan.backup-{{ ansible_date_time.iso8601 }}
+      args:
+        warn: false
 
-    - name: Add reachable hosts to group
-      ansible.builtin.add_host:
-        name: "{{ inventory_hostname }}"
-        groups: reachable_hosts
-      when: ping_result is succeeded
-
-# -------------------------------------------------------------------
-# STEP 2 — Push config to first reachable host
-# Choose reachable_hosts[0] or random
-# -------------------------------------------------------------------
-- name: Push config to selected reachable device
-  hosts: "{{ groups['reachable_hosts'] | first }}"
-  gather_facts: false
-
-  tasks:
-    - name: Show selected live device
-      debug:
-        msg: "Selected online device: {{ inventory_hostname }} (IP: {{ ansible_host }})"
-    # ---------------------------------------------------------------
-    # Ensure rendered directory exists (Semaphore-safe fix)
-    # ---------------------------------------------------------------
-    - name: Ensure rendered directory exists
-      ansible.builtin.file:
-        path: rendered
-        state: directory
-        mode: "0755"
-      delegate_to: localhost
-    # ---------------------------------------------------------------
-    # Render configuration template for this device
-    # ---------------------------------------------------------------
-    - name: Render generic config using host variables
+    - name: Push new netplan config
       ansible.builtin.template:
-        src: base-config.j2
-        dest: "rendered/{{ inventory_hostname }}.cfg"
-      delegate_to: localhost
+        src: templates/netplan-config.j2
+        dest: /etc/netplan/01-netcfg.yaml
+        owner: root
+        group: root
+        mode: '0644'
 
-    # ---------------------------------------------------------------
-    # Push rendered config to the online device
-    # ---------------------------------------------------------------
-    - name: Push configuration to device
-      ansible.netcommon.cli_config:
-        src: "rendered/{{ inventory_hostname }}.cfg"
-        save_when: modified
+    - name: Validate netplan configuration
+      ansible.builtin.command: netplan try --timeout 5
+      register: netplan_try
+      failed_when: "'reverting' in netplan_try.stdout"
+
+    - name: Apply netplan configuration
+      ansible.builtin.command: netplan apply
