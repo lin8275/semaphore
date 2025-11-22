@@ -1,0 +1,12 @@
+hostname {{ inventory_hostname }}
+
+interface Loopback0
+ ip address {{ loopback_ip }} 255.255.255.255
+
+interface GigabitEthernet0/0
+ ip address {{ ansible_host }} 255.255.255.0
+ no shutdown
+
+router ospf 1
+ router-id {{ loopback_ip }}
+ network {{ ansible_host }} 0.0.0.255 area 0
