@@ -1,0 +1,18 @@
+interface_name: GigabitEthernet0/1
+description: "Router2 Core Link"
+ip_address: 192.168.20.1
+subnet_mask: 255.255.255.0
+
+vlans:
+  - { id: 20, name: HR_R2 }
+  - { id: 21, name: FINANCE_R2 }
+  - { id: 22, name: GUEST_R2 }
+
+static_routes:
+  - { network: "10.30.0.0", mask: "255.255.0.0", next_hop: "192.168.20.254" }
+  - { network: "172.16.5.0", mask: "255.255.255.0", next_hop: "192.168.20.254" }
+
+ospf_process_id: 2
+ospf_networks:
+  - { network: "192.168.20.0", wildcard: "0.0.0.255", area: 0 }
+  
