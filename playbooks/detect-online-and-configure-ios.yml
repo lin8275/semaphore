@@ -1,0 +1,50 @@
+---
+- name: Detect online Cisco IOS devices via ping
+  hosts: ios
+  gather_facts: false
+  tasks:
+    - name: Ping device to test reachability
+      ansible.builtin.ping:
+      register: ping_result
+      ignore_unreachable: true
+      ignore_errors: true
+
+    - name: Add reachable devices to online_ios group
+      ansible.builtin.add_host:
+        name: "{{ inventory_hostname }}"
+        groups: online_ios
+      when: ping_result.ping is defined and ping_result.ping == "pong"
+
+
+- name: Push configuration to online Cisco IOS devices
+  hosts: online_ios
+  gather_facts: false
+  collections:
+    - cisco.ios
+
+  tasks:
+
+    - name: Configure interface
+      ios_config:
+        parents: "interface {{ interface_name }}"
+        lines:
+          - description {{ description }}
+          - ip address {{ ip_address }} {{ subnet_mask }}
+          - no shutdown
+
+    - name: Apply VLAN configuration
+      ios_config:
+        src: vlan-template.j2
+
+    - name: Apply static route configuration
+      ios_config:
+        src: routes-static.j2
+
+    - name: Apply OSPF configuration
+      ios_config:
+        src: routes-ospf.j2
+
+    - name: Save configuration
+      ios_config:
+        save_when: modified
+        
