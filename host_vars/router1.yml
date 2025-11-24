@@ -1,0 +1,16 @@
+interface_name: GigabitEthernet0/1
+description: "Router1 Uplink"
+ip_address: 192.168.10.1
+subnet_mask: 255.255.255.0
+
+vlans:
+  - { id: 10, name: USERS_R1 }
+  - { id: 11, name: VOICE_R1 }
+
+static_routes:
+  - { network: "10.20.0.0", mask: "255.255.0.0", next_hop: "192.168.10.254" }
+
+ospf_process_id: 1
+ospf_networks:
+  - { network: "192.168.10.0", wildcard: "0.0.0.255", area: 0 }
+  
