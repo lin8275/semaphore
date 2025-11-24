@@ -1,0 +1,9 @@
+[ios]
+router1 ansible_host=10.10.10.11
+router2 ansible_host=10.10.10.12
+
+[router1:vars]
+vlans=[{"id":10,"name":"USERS_R1"},{"id":11,"name":"VOICE_R1"}]
+
+[router2:vars]
+vlans=[{"id":20,"name":"HR_R2"},{"id":21,"name":"FINANCE_R2"}]
